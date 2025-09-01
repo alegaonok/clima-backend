@@ -1,0 +1,25 @@
+[project]
+name = "clima-backend"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "alegaon",email = "alegaon@outlook.com.ar"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "django",
+    "djangorestframework",
+    "psycopg2-binary",
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "requests (>=2.32.4,<3.0.0)",
+    "django-cors-headers (>=4.7.0,<5.0.0)",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
