@@ -1,1 +1,21 @@
+Archivos de entorno virtual
+
+.venv
+venv/
+Archivos de Python y Django
+
+*.pyc
+pycache/
+*.log
+*.pot
+*.pyo
+Base de datos local
+
+db.sqlite3
+Archivos de IDE
+
+.idea/
+.vscode/
+Archivo de variables de entorno (CRUCIAL)
+
 .env

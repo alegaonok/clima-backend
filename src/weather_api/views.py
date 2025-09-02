@@ -1,64 +1,43 @@
-# clima_backend/src/weather_api/views.py
-
-import os
+from rest_framework.views import APIView
+from django.http import JsonResponse
 import requests
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
+import os
 
-# Obtener la API Key desde settings.py (que a su vez la carga desde .env)
-# Importante: En un proyecto grande, se accedería directamente desde django.conf.settings
-# Para simplicidad inicial, podemos cargarla aquí, pero el mejor lugar es settings.py
-from django.conf import settings
+class WeatherView(APIView):
+    def get(self, request):
+        city = request.GET.get('city', 'Buenos Aires')
+        api_key = os.getenv('OPENWEATHER_API_KEY')
 
-@api_view(['GET']) # Esto indica que esta vista solo acepta peticiones GET
-def get_weather(request):
-    city = request.GET.get('city') # Obtiene la ciudad de los parámetros de la URL (?city=BuenosAires)
+        if not api_key:
+            return JsonResponse({'error': 'La clave de la API no está configurada.'}, status=500)
 
-    if not city:
-        return Response(
-            {"error": "Debe proporcionar el nombre de una ciudad."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        url = f'http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric&lang=es'
 
-    api_key = settings.OPENWEATHERMAP_API_KEY # Usamos la API Key de settings.py
-    if not api_key:
-        return Response(
-            {"error": "La API Key de OpenWeatherMap no está configurada."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        try:
+            response = requests.get(url)
 
-    # URL de la API de OpenWeatherMap
-    # 'q': ciudad, 'appid': tu clave, 'units': métricas (Celsius), 'lang': idioma (español)
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric&lang=es"
+            # Debugging: Imprime el estado y el texto de la respuesta en la terminal
+            print(f"URL de la API: {url}")
+            print(f"Estado de la respuesta de la API: {response.status_code}")
+            print(f"Texto de la respuesta de la API: {response.text}")
 
-    try:
-        response = requests.get(url)
-        response.raise_for_status() # Lanza una excepción para errores HTTP (4xx o 5xx)
-        weather_data = response.json()
+            response.raise_for_status()  # Lanza un error si la solicitud no fue exitosa
+            data = response.json()
 
-        # Extraer solo los datos relevantes
-        extracted_data = {
-            "city": weather_data.get("name"),
-            "country": weather_data.get("sys", {}).get("country"),
-            "temperature": weather_data.get("main", {}).get("temp"),
-            "feels_like": weather_data.get("main", {}).get("feels_like"),
-            "description": weather_data.get("weather", [{}])[0].get("description"),
-            "icon": weather_data.get("weather", [{}])[0].get("icon"),
-            "humidity": weather_data.get("main", {}).get("humidity"),
-            "wind_speed": weather_data.get("wind", {}).get("speed"),
-        }
-        return Response(extracted_data, status=status.HTTP_200_OK)
+            weather_data = {
+                'city': data['name'],
+                'temperature': data['main']['temp'],
+                'description': data['weather'][0]['description'],
+            }
 
-    except requests.exceptions.RequestException as e:
-        # Manejo de errores de conexión o HTTP
-        return Response(
-            {"error": f"Error al conectar con la API del clima: {e}"},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE # Servicio no disponible
-        )
-    except Exception as e:
-        # Manejo de cualquier otro error inesperado
-        return Response(
-            {"error": f"Ocurrió un error inesperado: {e}"},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+            return JsonResponse(weather_data)
+
+        except requests.exceptions.HTTPError as e:
+            # Captura errores HTTP específicos (401, 404, etc.)
+            return JsonResponse({'error': f'Error de la API: {e}'}, status=500)
+        except requests.exceptions.RequestException as e:
+            # Captura cualquier otro error de conexión
+            return JsonResponse({'error': f'Error de conexión: {e}'}, status=500)
+        except Exception as e:
+            # Captura cualquier otro error inesperado
+            return JsonResponse({'error': f'Ocurrió un error inesperado: {e}'}, status=500)

@@ -1,8 +1,6 @@
-# clima_backend/src/weather_api/urls.py
-
 from django.urls import path
-from . import views
+from .views import WeatherView
 
 urlpatterns = [
-    path('weather/', views.get_weather, name='get_weather'),
+    path('weather/', WeatherView.as_view(), name='weather-view'),
 ]
